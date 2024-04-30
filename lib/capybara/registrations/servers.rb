@@ -55,12 +55,15 @@ Capybara.register_server :puma do |app, port, host, **options| # rubocop:disable
   logger.log "* Version #{Puma::Const::PUMA_VERSION}, codename: #{Puma::Const::CODE_NAME}"
   logger.log "* Min threads: #{conf.options[:min_threads]}, max threads: #{conf.options[:max_threads]}"
 
-  Puma::Server.new(
+  server = Puma::Server.new(
     conf.app,
     defined?(Puma::LogWriter) ? nil : logger,
     conf.options
   ).tap do |s|
     s.binder.parse conf.options[:binds], (s.log_writer rescue s.events) # rubocop:disable Style/RescueModifier
     s.min_threads, s.max_threads = conf.options[:min_threads], conf.options[:max_threads] if s.respond_to? :min_threads=
-  end.run.join
+  end
+
+  at_exit { server.stop }
+  server.run.join
 end
